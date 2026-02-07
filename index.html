@@ -23,6 +23,7 @@
             justify-content: center;
             margin: 0;
             overflow: hidden;
+            transition: background 0.3s;
         }
 
         /* --- Стили КУБИКА --- */
@@ -153,9 +154,6 @@
             border-radius: 12px;
             transition: background 0.2s;
         }
-        .control-icon:hover {
-            background: rgba(56, 189, 248, 0.2);
-        }
         
         #close-fullscreen {
             display: none;
@@ -164,18 +162,35 @@
             right: 20px;
             font-size: 30px;
             cursor: pointer;
-            z-index: 60;
-            opacity: 0.6;
+            z-index: 1001;
+            opacity: 0.8;
+            background: rgba(0,0,0,0.3);
+            width: 44px;
+            height: 44px;
+            line-height: 44px;
+            text-align: center;
+            border-radius: 50%;
         }
+
+        /* Полноэкранный режим через класс */
         body.is-fullscreen .top-controls { display: none; }
         body.is-fullscreen #close-fullscreen { display: block; }
+        body.is-fullscreen #main-num-params { display: none; } /* Скрываем настройки чисел */
+
+        /* Псевдо-фуллскрин для Safari/TG */
+        body.is-fullscreen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1000;
+            background: #0f172a;
+        }
 
         .modal {
             display: none; position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(10px);
-            z-index: 100;
+            z-index: 2000;
             align-items: center; justify-content: center;
         }
         .modal.active { display: flex; }
@@ -216,32 +231,17 @@
             border-radius: 50%;
             box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
             border: 2px solid white;
-            transition: transform 0.1s ease;
-        }
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: #38bdf8;
-            cursor: pointer;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
         }
     </style>
 </head>
 <body id="body">
 
-    <!-- Кнопки управления в обычном режиме -->
     <div class="top-controls">
         <div class="control-icon" title="На весь экран" onclick="toggleFullscreen()">⛶</div>
         <div class="control-icon" title="Настройки" onclick="toggleModal()">⚙️</div>
     </div>
 
-    <!-- Кнопка выхода из фуллскрина (крестик) -->
-    <div id="close-fullscreen" onclick="toggleFullscreen()">✕</div>
+    <div id="close-fullscreen" onclick="exitFullscreenUI()">✕</div>
 
     <!-- СЕКЦИЯ 1: КУБИК -->
     <div id="section-dice" class="view-section active">
@@ -304,7 +304,6 @@
                 </div>
             </div>
 
-            <!-- Настройки Кубика -->
             <div id="dice-settings">
                 <label class="text-xs text-slate-400 uppercase font-bold">Логика кубика:</label>
                 <div class="flex gap-2 mt-2 mb-4">
@@ -312,26 +311,18 @@
                     <button id="btn-seq" onclick="setDiceMode('sequence')" class="flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs">Очередь</button>
                 </div>
                 <div id="seq-input-div" class="hidden">
-                    <input type="text" id="sequenceInput" placeholder="Очередь (напр. 152)">
-                    <p class="text-[10px] text-slate-500 mt-1">Числа от 1 до 6 через пробел или запятую</p>
+                    <input type="text" id="sequenceInput" placeholder="Очередь (напр. 162)">
                 </div>
             </div>
 
-            <!-- Настройки Чисел -->
             <div id="num-settings" class="hidden space-y-4">
                 <label class="text-xs text-slate-400 uppercase font-bold">Логика генератора:</label>
                 <div class="flex gap-2 mt-2">
                     <button id="num-logic-rnd" onclick="setNumMode('random')" class="flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs">Рандом</button>
                     <button id="num-logic-seq" onclick="setNumMode('sequence')" class="flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs">Очередь</button>
                 </div>
-
                 <div id="num-seq-params" class="hidden pt-2">
-                    <label class="text-[10px] text-slate-400 uppercase font-bold">Ваша очередь чисел:</label>
-                    <input type="text" id="numSequenceInput" placeholder="Напр: 8 15 55" class="mt-2">
-                    <p class="text-[10px] text-slate-500 mt-1">Числа через пробел или запятую</p>
-                </div>
-                <div id="num-rnd-info" class="text-center py-2 text-slate-400 text-xs italic">
-                    Параметры рандома настраиваются на главном экране
+                    <input type="text" id="numSequenceInput" placeholder="Напр: 5 10 15" class="mt-2">
                 </div>
             </div>
 
@@ -359,33 +350,60 @@
             document.getElementById('section-numbers').classList.toggle('active', view === 'numbers');
             document.getElementById('dice-settings').classList.toggle('hidden', view !== 'dice');
             document.getElementById('num-settings').classList.toggle('hidden', view !== 'numbers');
-
             document.getElementById('view-dice-btn').className = view === 'dice' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold';
             document.getElementById('view-num-btn').className = view === 'numbers' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold';
         }
 
-        // --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
-        function toggleFullscreen() {
+        // --- ИСПРАВЛЕННЫЙ ПОЛНОЭКРАННЫЙ РЕЖИМ С ОБРАБОТКОЙ ОШИБОК ---
+        async function toggleFullscreen() {
             const body = document.getElementById('body');
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`Error: ${err.message}`);
-                });
-                body.classList.add('is-fullscreen');
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
+            const docEl = document.documentElement;
+
+            // Визуально входим в режим сразу (Псевдо-фуллскрин всегда работает)
+            body.classList.add('is-fullscreen');
+
+            // Пробуем запустить системный Fullscreen. 
+            // Оборачиваем в try/catch, чтобы избежать Unhandled Rejection при блокировке политикой браузера
+            try {
+                if (docEl.requestFullscreen) {
+                    await docEl.requestFullscreen();
+                } else if (docEl.webkitRequestFullscreen) { /* Safari */
+                    await docEl.webkitRequestFullscreen();
+                } else if (docEl.msRequestFullscreen) { /* IE11 */
+                    await docEl.msRequestFullscreen();
                 }
-                body.classList.remove('is-fullscreen');
+            } catch (err) {
+                // Если системный режим запрещен, мы просто остаемся в CSS-режиме is-fullscreen
+                console.log("System fullscreen denied, using CSS fallback.");
             }
         }
 
-        // Слушатель для кнопки Esc или системного выхода
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
+        async function exitFullscreenUI() {
+            const body = document.getElementById('body');
+            body.classList.remove('is-fullscreen');
+            
+            try {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        await document.webkitExitFullscreen();
+                    }
+                }
+            } catch (err) {
+                console.log("Error exiting system fullscreen.");
+            }
+        }
+
+        // Следим за системным выходом (клавиша Esc)
+        document.addEventListener('fullscreenchange', handleExit);
+        document.addEventListener('webkitfullscreenchange', handleExit);
+
+        function handleExit() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 document.getElementById('body').classList.remove('is-fullscreen');
             }
-        });
+        }
 
         // КУБИК
         function setDiceMode(m) {
@@ -423,34 +441,27 @@
             document.getElementById('num-logic-rnd').className = m === 'random' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs';
             document.getElementById('num-logic-seq').className = m === 'sequence' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs';
             document.getElementById('num-seq-params').classList.toggle('hidden', m !== 'sequence');
-            document.getElementById('num-rnd-info').classList.toggle('hidden', m !== 'random');
             if (m === 'sequence') numSeqIndex = 0;
         }
 
         function generateNumbers() {
             let results = [];
             const wrapper = document.getElementById('results-wrapper');
-
             if (numLogic === 'random') {
                 const min = parseInt(document.getElementById('num-from').value) || 1;
                 const max = parseInt(document.getElementById('num-to').value) || 100;
                 const count = parseInt(document.getElementById('num-count').value) || 1;
                 const unique = document.getElementById('num-unique').checked;
-
-                if (min >= max) {
-                    results = [min];
+                const rangeSize = max - min + 1;
+                if (unique) {
+                    let pool = Array.from({length: Math.min(rangeSize, 1000)}, (_, i) => min + i);
+                    for (let i = 0; i < Math.min(count, pool.length); i++) {
+                        const idx = Math.floor(Math.random() * pool.length);
+                        results.push(pool.splice(idx, 1)[0]);
+                    }
                 } else {
-                    const rangeSize = max - min + 1;
-                    if (unique) {
-                        let pool = Array.from({length: Math.min(rangeSize, 1000)}, (_, i) => min + i);
-                        for (let i = 0; i < Math.min(count, pool.length); i++) {
-                            const idx = Math.floor(Math.random() * pool.length);
-                            results.push(pool.splice(idx, 1)[0]);
-                        }
-                    } else {
-                        for (let i = 0; i < count; i++) {
-                            results.push(Math.floor(Math.random() * rangeSize) + min);
-                        }
+                    for (let i = 0; i < count; i++) {
+                        results.push(Math.floor(Math.random() * rangeSize) + min);
                     }
                 }
             } else {
@@ -463,7 +474,6 @@
                     numSeqIndex = (numSeqIndex + 1) % seq.length;
                 }
             }
-
             wrapper.innerHTML = '';
             results.forEach(num => {
                 const card = document.createElement('div');
