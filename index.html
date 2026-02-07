@@ -2,8 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Random</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Random Test</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -12,21 +13,35 @@
             --dot-color: #1a1a2e;
         }
 
-        body {
+        /* Убираем все системные отступы для имитации нативного приложения */
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
             background: #0f172a;
+        }
+
+        body {
             color: white;
             font-family: 'Inter', sans-serif;
-            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin: 0;
-            overflow: hidden;
-            transition: background 0.3s;
+            /* Учет "челок" iPhone */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
-        /* --- Стили КУБИКА --- */
+        /* Фоновый слой для полноэкранного режима */
+        #main-container {
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+        }
+
         .scene {
             width: var(--cube-size);
             height: var(--cube-size);
@@ -65,65 +80,6 @@
         .cube__face--5 { transform: rotateX(90deg) translateZ(60px); }
         .cube__face--6 { transform: rotateX(-90deg) translateZ(60px); }
 
-        /* --- Стили ВЫВОДА ЧИСЕЛ --- */
-        .results-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
-            max-width: 90vw;
-            max-height: 35vh;
-            overflow-y: auto;
-            padding: 10px;
-            margin-bottom: 1.5rem;
-        }
-
-        .number-card {
-            background: rgba(30, 41, 59, 0.7);
-            border: 2px solid #38bdf8;
-            color: white;
-            min-width: 70px;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 14px;
-            font-size: 1.8rem;
-            font-weight: 800;
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
-        }
-
-        .number-card.single {
-            min-width: 120px;
-            height: 120px;
-            font-size: 4rem;
-            border-width: 4px;
-        }
-
-        @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .yellow-btn {
-            background: linear-gradient(180deg, #ffde37 0%, #f9a31b 100%);
-            color: #000;
-            padding: 14px 40px;
-            border-radius: 14px;
-            font-weight: 900;
-            font-size: 1.3rem;
-            box-shadow: 0 4px 0 #b47000, 0 10px 20px rgba(249, 163, 27, 0.3);
-            transition: all 0.1s;
-            cursor: pointer;
-            border: none;
-            font-style: italic;
-        }
-        .yellow-btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #b47000;
-        }
-
         .roll-btn {
             background: #38bdf8;
             color: #0f172a;
@@ -135,116 +91,25 @@
             box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);
             cursor: pointer;
             border: none;
+            z-index: 10;
         }
 
-        /* --- UI Элементы управления --- */
-        .top-controls {
+        .safari-link {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 50;
-        }
-        .control-icon {
-            font-size: 24px;
+            bottom: 30px;
+            color: #64748b;
+            font-size: 0.8rem;
+            text-decoration: underline;
             cursor: pointer;
-            padding: 8px;
-            background: rgba(30, 41, 59, 0.5);
-            border-radius: 12px;
-            transition: background 0.2s;
-        }
-        
-        #close-fullscreen {
-            display: none;
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 30px;
-            cursor: pointer;
-            z-index: 1001;
-            opacity: 0.8;
-            background: rgba(0,0,0,0.3);
-            width: 44px;
-            height: 44px;
-            line-height: 44px;
-            text-align: center;
-            border-radius: 50%;
         }
 
-        /* Полноэкранный режим через класс */
-        body.is-fullscreen .top-controls { display: none; }
-        body.is-fullscreen #close-fullscreen { display: block; }
-        body.is-fullscreen #main-num-params { display: none; } /* Скрываем настройки чисел */
-
-        /* Псевдо-фуллскрин для Safari/TG */
-        body.is-fullscreen {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 1000;
-            background: #0f172a;
-        }
-
-        .modal {
-            display: none; position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 2000;
-            align-items: center; justify-content: center;
-        }
-        .modal.active { display: flex; }
-        .settings-card {
-            background: #1e293b;
-            padding: 1.5rem;
-            border-radius: 24px;
-            width: 90%; max-width: 420px;
-            border: 1px solid #334155;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        input[type="text"], input[type="number"] {
-            background: #0f172a; border: 1px solid #334155;
-            color: #38bdf8; padding: 10px; border-radius: 10px; width: 100%;
-        }
-        
-        .view-section { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 450px;}
-        .view-section.active { display: flex; }
-        
-        /* КРАСИВЫЙ ПОЛЗУНОК */
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            background: #334155;
-            border-radius: 5px;
-            outline: none;
-            margin: 15px 0;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #38bdf8;
-            cursor: pointer;
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-            border: 2px solid white;
-        }
+        /* Скрываем элементы при активном полноэкранном режиме, если нужно */
+        :fullscreen .safari-link { display: none; }
     </style>
 </head>
-<body id="body">
+<body>
 
-    <div class="top-controls">
-        <div class="control-icon" title="На весь экран" onclick="toggleFullscreen()">⛶</div>
-        <div class="control-icon" title="Настройки" onclick="toggleModal()">⚙️</div>
-    </div>
-
-    <div id="close-fullscreen" onclick="exitFullscreenUI()">✕</div>
-
-    <!-- СЕКЦИЯ 1: КУБИК -->
-    <div id="section-dice" class="view-section active">
+    <div id="main-container">
         <div class="scene">
             <div class="cube" id="cube">
                 <div class="cube__face cube__face--1"><div style="grid-area: 2/2" class="dot"></div></div>
@@ -255,236 +120,80 @@
                 <div class="cube__face cube__face--6"><div style="grid-area: 1/1" class="dot"></div><div style="grid-area: 2/1" class="dot"></div><div style="grid-area: 3/1" class="dot"></div><div style="grid-area: 1/3" class="dot"></div><div style="grid-area: 2/3" class="dot"></div><div style="grid-area: 3/3" class="dot"></div></div>
             </div>
         </div>
-        <button class="roll-btn" onclick="rollDice()">Крутить</button>
-    </div>
 
-    <!-- СЕКЦИЯ 2: ЧИСЛА -->
-    <div id="section-numbers" class="view-section px-6">
-        <h2 class="text-slate-400 mb-4 uppercase tracking-widest text-xs">Результат:</h2>
-        
-        <div id="results-wrapper" class="results-container">
-            <div class="number-card single">?</div>
-        </div>
+        <button class="roll-btn" onclick="handleInteraction()">Крутить</button>
 
-        <button class="yellow-btn w-full mb-8" onclick="generateNumbers()">Сгенерировать</button>
-
-        <!-- БЛОК НАСТРОЕК ПОД КНОПКОЙ -->
-        <div id="main-num-params" class="w-full space-y-4 bg-slate-800/40 p-5 rounded-3xl border border-slate-700/50">
-            <div class="flex gap-3">
-                <div class="flex-1">
-                    <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">От</label>
-                    <input type="number" id="num-from" value="1">
-                </div>
-                <div class="flex-1">
-                    <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">До</label>
-                    <input type="number" id="num-to" value="100">
-                </div>
-            </div>
-            <div>
-                <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Кол-во чисел: <span id="count-val" class="text-sky-400">1</span></label>
-                <input type="range" id="num-count" min="1" max="55" value="1" oninput="document.getElementById('count-val').innerText = this.value">
-            </div>
-            <div class="flex items-center gap-2 pt-1">
-                <input type="checkbox" id="num-unique" class="w-5 h-5 accent-sky-500 rounded">
-                <label for="num-unique" class="text-xs text-slate-300 font-medium">исключить повторения</label>
-            </div>
-        </div>
-    </div>
-
-    <!-- МОДАЛКА НАСТРОЕК -->
-    <div id="settingsModal" class="modal">
-        <div class="settings-card text-white">
-            <h2 class="text-xl font-bold mb-4 text-center">Настройки</h2>
-            
-            <div class="mb-6">
-                <label class="text-xs text-slate-400 uppercase font-bold">Раздел:</label>
-                <div class="flex gap-2 mt-2">
-                    <button id="view-dice-btn" onclick="switchView('dice')" class="flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold">Кубик</button>
-                    <button id="view-num-btn" onclick="switchView('numbers')" class="flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold">Числа</button>
-                </div>
-            </div>
-
-            <div id="dice-settings">
-                <label class="text-xs text-slate-400 uppercase font-bold">Логика кубика:</label>
-                <div class="flex gap-2 mt-2 mb-4">
-                    <button id="btn-rnd" onclick="setDiceMode('random')" class="flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs">Рандом</button>
-                    <button id="btn-seq" onclick="setDiceMode('sequence')" class="flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs">Очередь</button>
-                </div>
-                <div id="seq-input-div" class="hidden">
-                    <input type="text" id="sequenceInput" placeholder="Очередь (напр. 162)">
-                </div>
-            </div>
-
-            <div id="num-settings" class="hidden space-y-4">
-                <label class="text-xs text-slate-400 uppercase font-bold">Логика генератора:</label>
-                <div class="flex gap-2 mt-2">
-                    <button id="num-logic-rnd" onclick="setNumMode('random')" class="flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs">Рандом</button>
-                    <button id="num-logic-seq" onclick="setNumMode('sequence')" class="flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs">Очередь</button>
-                </div>
-                <div id="num-seq-params" class="hidden pt-2">
-                    <input type="text" id="numSequenceInput" placeholder="Напр: 5 10 15" class="mt-2">
-                </div>
-            </div>
-
-            <button onclick="toggleModal()" class="w-full mt-6 py-2 text-slate-400 underline text-sm">Закрыть</button>
-        </div>
+        <div class="safari-link" onclick="openInExternalBrowser()">Открыть в браузере (Safari/Chrome)</div>
     </div>
 
     <script>
-        let appView = 'dice';
-        let diceLogic = 'random';
-        let diceSeqIndex = 0;
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
         let xRotation = -20;
         let yRotation = -20;
-        const cube = document.getElementById('cube');
-        let numLogic = 'random';
-        let numSeqIndex = 0;
 
-        function toggleModal() {
-            document.getElementById('settingsModal').classList.toggle('active');
-        }
-
-        function switchView(view) {
-            appView = view;
-            document.getElementById('section-dice').classList.toggle('active', view === 'dice');
-            document.getElementById('section-numbers').classList.toggle('active', view === 'numbers');
-            document.getElementById('dice-settings').classList.toggle('hidden', view !== 'dice');
-            document.getElementById('num-settings').classList.toggle('hidden', view !== 'numbers');
-            document.getElementById('view-dice-btn').className = view === 'dice' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold';
-            document.getElementById('view-num-btn').className = view === 'numbers' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold';
-        }
-
-        // --- ИСПРАВЛЕННЫЙ ПОЛНОЭКРАННЫЙ РЕЖИМ С ОБРАБОТКОЙ ОШИБОК ---
-        async function toggleFullscreen() {
-            const body = document.getElementById('body');
-            const docEl = document.documentElement;
-
-            // Визуально входим в режим сразу (Псевдо-фуллскрин всегда работает)
-            body.classList.add('is-fullscreen');
-
-            // Пробуем запустить системный Fullscreen. 
-            // Оборачиваем в try/catch, чтобы избежать Unhandled Rejection при блокировке политикой браузера
-            try {
-                if (docEl.requestFullscreen) {
-                    await docEl.requestFullscreen();
-                } else if (docEl.webkitRequestFullscreen) { /* Safari */
-                    await docEl.webkitRequestFullscreen();
-                } else if (docEl.msRequestFullscreen) { /* IE11 */
-                    await docEl.msRequestFullscreen();
-                }
-            } catch (err) {
-                // Если системный режим запрещен, мы просто остаемся в CSS-режиме is-fullscreen
-                console.log("System fullscreen denied, using CSS fallback.");
-            }
-        }
-
-        async function exitFullscreenUI() {
-            const body = document.getElementById('body');
-            body.classList.remove('is-fullscreen');
+        // Главная функция: вызывается при нажатии
+        function handleInteraction() {
+            // 1. Пытаемся зайти в системный Fullscreen браузера (как в фильмах)
+            activateWebFullscreen();
             
-            try {
-                if (document.fullscreenElement || document.webkitFullscreenElement) {
-                    if (document.exitFullscreen) {
-                        await document.exitFullscreen();
-                    } else if (document.webkitExitFullscreen) {
-                        await document.webkitExitFullscreen();
-                    }
+            // 2. Пытаемся расширить окно Telegram
+            if (tg) {
+                tg.expand();
+                if (tg.isVersionAtLeast('7.0')) {
+                    try { tg.requestFullscreen(); } catch(e) {}
                 }
-            } catch (err) {
-                console.log("Error exiting system fullscreen.");
             }
+
+            // 3. Крутим кубик
+            rollDice();
         }
 
-        // Следим за системным выходом (клавиша Esc)
-        document.addEventListener('fullscreenchange', handleExit);
-        document.addEventListener('webkitfullscreenchange', handleExit);
-
-        function handleExit() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                document.getElementById('body').classList.remove('is-fullscreen');
+        function activateWebFullscreen() {
+            const elem = document.documentElement; // Весь документ
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari / iOS */
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
             }
-        }
-
-        // КУБИК
-        function setDiceMode(m) {
-            diceLogic = m;
-            document.getElementById('btn-rnd').className = m === 'random' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs';
-            document.getElementById('btn-seq').className = m === 'sequence' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs';
-            document.getElementById('seq-input-div').classList.toggle('hidden', m !== 'sequence');
         }
 
         function rollDice() {
-            let result;
-            if (diceLogic === 'random') {
-                result = Math.floor(Math.random() * 6) + 1;
-            } else {
-                const val = document.getElementById('sequenceInput').value;
-                const matches = val.match(/[1-6]/g);
-                const seq = matches ? matches.map(n => parseInt(n)) : [];
-                if (!seq.length) result = Math.floor(Math.random() * 6) + 1;
-                else {
-                    result = seq[diceSeqIndex];
-                    diceSeqIndex = (diceSeqIndex + 1) % seq.length;
-                }
-            }
-            const targets = { 1: {x:0,y:0}, 2: {x:0,y:-90}, 3: {x:0,y:-180}, 4: {x:0,y:90}, 5: {x:-90,y:0}, 6: {x:90,y:0} };
+            const result = Math.floor(Math.random() * 6) + 1;
+            const targets = { 
+                1: {x:0,y:0}, 2: {x:0,y:-90}, 3: {x:0,y:-180}, 
+                4: {x:0,y:90}, 5: {x:-90,y:0}, 6: {x:90,y:0} 
+            };
+            
             xRotation += 1080; yRotation += 1080;
             const finalX = (Math.round(xRotation/360)*360) + targets[result].x;
             const finalY = (Math.round(yRotation/360)*360) + targets[result].y;
+            
             xRotation = finalX; yRotation = finalY;
-            cube.style.transform = `translateZ(-60px) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
-        }
+            document.getElementById('cube').style.transform = `translateZ(-60px) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
 
-        // ЧИСЛА
-        function setNumMode(m) {
-            numLogic = m;
-            document.getElementById('num-logic-rnd').className = m === 'random' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs';
-            document.getElementById('num-logic-seq').className = m === 'sequence' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs';
-            document.getElementById('num-seq-params').classList.toggle('hidden', m !== 'sequence');
-            if (m === 'sequence') numSeqIndex = 0;
-        }
-
-        function generateNumbers() {
-            let results = [];
-            const wrapper = document.getElementById('results-wrapper');
-            if (numLogic === 'random') {
-                const min = parseInt(document.getElementById('num-from').value) || 1;
-                const max = parseInt(document.getElementById('num-to').value) || 100;
-                const count = parseInt(document.getElementById('num-count').value) || 1;
-                const unique = document.getElementById('num-unique').checked;
-                const rangeSize = max - min + 1;
-                if (unique) {
-                    let pool = Array.from({length: Math.min(rangeSize, 1000)}, (_, i) => min + i);
-                    for (let i = 0; i < Math.min(count, pool.length); i++) {
-                        const idx = Math.floor(Math.random() * pool.length);
-                        results.push(pool.splice(idx, 1)[0]);
-                    }
-                } else {
-                    for (let i = 0; i < count; i++) {
-                        results.push(Math.floor(Math.random() * rangeSize) + min);
-                    }
-                }
-            } else {
-                const val = document.getElementById('numSequenceInput').value;
-                const matches = val.match(/\d+/g);
-                const seq = matches ? matches.map(n => parseInt(n)) : [];
-                if (seq.length === 0) results = [0];
-                else {
-                    results = [seq[numSeqIndex]];
-                    numSeqIndex = (numSeqIndex + 1) % seq.length;
-                }
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('heavy');
             }
-            wrapper.innerHTML = '';
-            results.forEach(num => {
-                const card = document.createElement('div');
-                card.className = results.length === 1 ? 'number-card single' : 'number-card';
-                card.innerText = num;
-                wrapper.appendChild(card);
-            });
+        }
+
+        function openInExternalBrowser() {
+            if (tg) {
+                // Пытаемся открыть текущий URL во внешнем браузере
+                tg.openLink(window.location.href, {try_instant_view: false});
+            } else {
+                window.open(window.location.href, '_blank');
+            }
         }
 
         window.onload = () => {
-            cube.style.transform = `translateZ(-60px) rotateX(-20deg) rotateY(-20deg)`;
+            if (tg) {
+                tg.ready();
+                tg.expand();
+                tg.setHeaderColor('#0f172a');
+            }
+            document.getElementById('cube').style.transform = `translateZ(-60px) rotateX(-20deg) rotateY(-20deg)`;
         };
     </script>
 </body>
