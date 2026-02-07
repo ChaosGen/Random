@@ -123,7 +123,6 @@
             box-shadow: 0 2px 0 #b47000;
         }
 
-        /* Общие элементы */
         .roll-btn {
             background: #38bdf8;
             color: #0f172a;
@@ -136,6 +135,40 @@
             cursor: pointer;
             border: none;
         }
+
+        /* --- UI Элементы управления --- */
+        .top-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 50;
+        }
+        .control-icon {
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+        .control-icon:hover {
+            background: rgba(56, 189, 248, 0.2);
+        }
+        
+        #close-fullscreen {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            z-index: 60;
+            opacity: 0.6;
+        }
+        body.is-fullscreen .top-controls { display: none; }
+        body.is-fullscreen #close-fullscreen { display: block; }
 
         .modal {
             display: none; position: fixed;
@@ -159,14 +192,11 @@
             background: #0f172a; border: 1px solid #334155;
             color: #38bdf8; padding: 10px; border-radius: 10px; width: 100%;
         }
-        .settings-icon {
-            position: absolute; top: 20px; right: 20px;
-            font-size: 24px; cursor: pointer; padding: 10px; z-index: 50;
-        }
+        
         .view-section { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 450px;}
         .view-section.active { display: flex; }
         
-        /* КРАСИВЫЙ ПОЛЗУНОК */ 
+        /* КРАСИВЫЙ ПОЛЗУНОК */
         input[type="range"] {
             -webkit-appearance: none;
             width: 100%;
@@ -202,9 +232,16 @@
         }
     </style>
 </head>
-<body>
+<body id="body">
 
-    <div class="settings-icon" onclick="toggleModal()">⚙️</div>
+    <!-- Кнопки управления в обычном режиме -->
+    <div class="top-controls">
+        <div class="control-icon" title="На весь экран" onclick="toggleFullscreen()">⛶</div>
+        <div class="control-icon" title="Настройки" onclick="toggleModal()">⚙️</div>
+    </div>
+
+    <!-- Кнопка выхода из фуллскрина (крестик) -->
+    <div id="close-fullscreen" onclick="toggleFullscreen()">✕</div>
 
     <!-- СЕКЦИЯ 1: КУБИК -->
     <div id="section-dice" class="view-section active">
@@ -275,12 +312,12 @@
                     <button id="btn-seq" onclick="setDiceMode('sequence')" class="flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs">Очередь</button>
                 </div>
                 <div id="seq-input-div" class="hidden">
-                    <input type="text" id="sequenceInput" placeholder="Очередь (напр. 253)">
+                    <input type="text" id="sequenceInput" placeholder="Очередь (напр. 152)">
                     <p class="text-[10px] text-slate-500 mt-1">Числа от 1 до 6 через пробел или запятую</p>
                 </div>
             </div>
 
-            <!-- Настройки Чисел (Только выбор логики) -->
+            <!-- Настройки Чисел -->
             <div id="num-settings" class="hidden space-y-4">
                 <label class="text-xs text-slate-400 uppercase font-bold">Логика генератора:</label>
                 <div class="flex gap-2 mt-2">
@@ -309,7 +346,6 @@
         let xRotation = -20;
         let yRotation = -20;
         const cube = document.getElementById('cube');
-
         let numLogic = 'random';
         let numSeqIndex = 0;
 
@@ -327,6 +363,29 @@
             document.getElementById('view-dice-btn').className = view === 'dice' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold';
             document.getElementById('view-num-btn').className = view === 'numbers' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold';
         }
+
+        // --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
+        function toggleFullscreen() {
+            const body = document.getElementById('body');
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error: ${err.message}`);
+                });
+                body.classList.add('is-fullscreen');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+                body.classList.remove('is-fullscreen');
+            }
+        }
+
+        // Слушатель для кнопки Esc или системного выхода
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('body').classList.remove('is-fullscreen');
+            }
+        });
 
         // КУБИК
         function setDiceMode(m) {
@@ -363,10 +422,8 @@
             numLogic = m;
             document.getElementById('num-logic-rnd').className = m === 'random' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs';
             document.getElementById('num-logic-seq').className = m === 'sequence' ? 'flex-1 py-2 rounded-lg bg-sky-500 text-slate-900 font-bold text-xs' : 'flex-1 py-2 rounded-lg border border-sky-500 text-sky-500 font-bold text-xs';
-            
             document.getElementById('num-seq-params').classList.toggle('hidden', m !== 'sequence');
             document.getElementById('num-rnd-info').classList.toggle('hidden', m !== 'random');
-            
             if (m === 'sequence') numSeqIndex = 0;
         }
 
